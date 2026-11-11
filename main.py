@@ -108,9 +108,9 @@ def get_root_status():
 @app.get("/.well-known/glama.json")
 def get_glama_claim():
     return {
-        "$schema": "https://glama.ai/mcp/schemas/connector.json",
-        "claim": "glama_claim_ufq8wuIc1jv6CIT9JWJk5rLeBCmXAcEp"
-    }
+  "$schema": "https://glama.ai/mcp/schemas/connector.json",
+  "claim": "glama_claim_ufq8wuIc1jv6CII9JWJk5rLeBCmXAeEp"
+}
 
 @app.get("/.well-known/agent.json")
 def get_a2a_agent_card():
