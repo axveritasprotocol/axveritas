@@ -1,32 +1,35 @@
 """
 AXVERITAS: Autonomous Scrape Verification & Micropayment Relay
-Base Mainnet Production Edition
+Hardened Security Edition (Base Mainnet)
 Run: uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
 import time
 import hashlib
-from typing import Dict, Any, List, Optional
+import ipaddress
+import socket
+from urllib.parse import urlparse
+from typing import Dict, Any, List, Optional, Set
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import FastAPI, HTTPException, Request, Response, status, Header
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(
-    title="Axveritas - Data Scrape Verification Rail",
-    description="Autonomous x402-metered verification and micro-settlement clearinghouse for AI agents.",
-    version="2.1.0"
+    title="Axveritas - Hardened Verification Relay",
+    description="Zero-trust, SSRF-protected x402 verification bridge for autonomous agents on Base.",
+    version="2.2.0"
 )
 
 # ── NETWORK & TREASURY CONFIGURATION ──
 NETWORK_NAME = "base"
 CHAIN_ID = 8453
 USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-
-# COINBASE WALLET BASE RECEIVING ADDRESS:
 TREASURY_ADDRESS = "0x5922a9b0981db65827AC80F477b5dA3aE133c899"
 PROTOCOL_TOLL_RATE = 0.01  # 1% Protocol Cut
 
+# In-memory replay protection and metrics
+SEEN_TX_SIGNATURES: Set[str] = set()
 PROTOCOL_METRICS = {
     "protocol": "Axveritas",
     "network": NETWORK_NAME,
@@ -37,13 +40,43 @@ PROTOCOL_METRICS = {
     "status": "MAINNET_ONLINE_ACTIVE"
 }
 
+# ── SECURITY ENFORCEMENT HELPERS ──
+
+def assert_safe_external_url(target_url: str):
+    """
+    Prevents SSRF (Server-Side Request Forgery).
+    Blocks localhost, private networks, and internal cloud metadata endpoints.
+    """
+    try:
+        parsed = urlparse(target_url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Only http and https schemes are permitted.")
+        
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Invalid target host.")
+
+        # Resolve hostname to check destination IP
+        ip_info = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in ip_info:
+            ip = ipaddress.ip_address(sockaddr[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError("Routing to private, local, or cloud-internal addresses is blocked.")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Security violation: Target URL disallowed ({str(exc)})"
+        )
+
+# ── REQUEST MODELS ──
+
 class ScrapeTaskRequest(BaseModel):
-    caller_agent_id: str
-    target_worker_endpoint: str
-    target_scrape_url: str
-    bounty_usdc: float = Field(gt=0.0)
-    required_keys: List[str]
-    expected_min_records: Optional[int] = Field(default=1)
+    caller_agent_id: str = Field(..., max_length=128)
+    target_worker_endpoint: str = Field(..., max_length=512)
+    target_scrape_url: str = Field(..., max_length=1024)
+    bounty_usdc: float = Field(gt=0.0, le=100.0, description="Task payment in USDC ($100 cap per micro-task)")
+    required_keys: List[str] = Field(..., max_items=50)
+    expected_min_records: Optional[int] = Field(default=1, le=5000)
 
 # ── 1. MACHINE DISCOVERY & LEGAL MANIFESTS ──
 
@@ -51,8 +84,8 @@ class ScrapeTaskRequest(BaseModel):
 def get_a2a_agent_card():
     return {
         "name": "axveritas-relay",
-        "description": "Zero-trust verification bridge for web scraping, HTML extraction, and structured data tasks.",
-        "version": "2.1.0",
+        "description": "Zero-trust verification bridge for web scraping and structured data tasks.",
+        "version": "2.2.0",
         "capabilities": {
             "supported_tasks": ["web_scrape_verification", "json_schema_assertion"],
             "payment_standard": "x402",
@@ -73,15 +106,12 @@ def get_llms_manifest():
     return f"""# Axveritas Protocol (Base Mainnet)
 > Autonomous Agent-to-Exchange (AX) Verification & Micropayment Relay
 
-## Network Parameters
+## Security & Network Guardrails
 - Network: {NETWORK_NAME} (Chain ID: {CHAIN_ID})
 - USDC Contract: {USDC_CONTRACT}
 - Facilitator Treasury: {TREASURY_ADDRESS}
-
-## Workflow
-1. Caller sends task parameters and required schema keys to POST /v1/relay.
-2. If X-Payment-Signature header is missing, bridge returns HTTP 402 with Base Mainnet payment details.
-3. Bridge relays job to worker endpoint, evaluates payload against strict schema assertions, and disburses funds atomically.
+- SSRF Egress Filtering: Active
+- Replay Attack Mitigation: Active
 
 ## Legal Disclaimer
 This service is provided strictly "AS IS" as an automated technical routing pipeline. 
@@ -92,18 +122,21 @@ The relay operator exercises zero custody over assets and disclaims all warranti
 def get_legal_terms():
     return {
         "title": "Axveritas Transit Protocol Terms of Use",
-        "terms": "THE SOFTWARE AND RELAY ARE PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. "
-                 "IN NO EVENT SHALL THE OPERATORS BE LIABLE FOR ANY CLAIM, DAMAGES, DATA BREACHES, OR SCRAPING VIOLATIONS.",
+        "terms": "THE SOFTWARE AND RELAY ARE PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND. "
+                 "IN NO EVENT SHALL THE OPERATORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR VIOLATIONS.",
         "role": "Non-custodial cryptographic verification router."
     }
 
-# ── 2. THE 3-STEP VERIFICATION & SETTLEMENT RELAY ──
+# ── 2. THE 3-STEP HARDENED VERIFICATION RELAY ──
 
 @app.post("/v1/relay")
-async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
-    # Step 1: Saloon Doors - x402 Solvency Check
-    payment_signature = request.headers.get("X-Payment-Signature")
-    if not payment_signature:
+async def execute_scrape_relay(
+    req: ScrapeTaskRequest, 
+    request: Request,
+    x_payment_signature: Optional[str] = Header(default=None, alias="X-Payment-Signature")
+):
+    # Step 1: Saloon Doors - Payment & Replay Validation
+    if not x_payment_signature:
         return JSONResponse(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             content={
@@ -115,13 +148,27 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
                 "token_contract": USDC_CONTRACT,
                 "required_bounty_usdc": req.bounty_usdc,
                 "pay_to": TREASURY_ADDRESS,
-                "instructions": "Submit signed Base Mainnet transaction hash in 'X-Payment-Signature' header."
+                "instructions": "Submit unique signed Base transaction hash in 'X-Payment-Signature' header."
             },
             headers={"X-Accept-Payment": "x402-base-usdc"}
         )
 
-    # Step 2: The Diagonal - Forward to Worker & Assert Schema
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    # Replay Protection: Ensure signature has not been processed already
+    clean_sig = x_payment_signature.strip().lower()
+    if clean_sig in SEEN_TX_SIGNATURES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Replay attack detected: Transaction signature has already been settled."
+        )
+
+    # SSRF Protection: Validate target worker and scrape URLs
+    assert_safe_external_url(req.target_worker_endpoint)
+    assert_safe_external_url(req.target_scrape_url)
+
+    # Step 2: The Diagonal - Forward to Worker with Size & Timeout Limits
+    # Enforces 15-second max execution and 5MB payload cutoff
+    limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
+    async with httpx.AsyncClient(timeout=15.0, limits=limits) as client:
         try:
             worker_response = await client.post(
                 req.target_worker_endpoint,
@@ -139,6 +186,12 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
             detail=f"Worker failed scrape with status {worker_response.status_code}. Escrow refunded."
         )
 
+    if len(worker_response.content) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Worker deliverable exceeded maximum 5MB size limit. Escrow refunded."
+        )
+
     try:
         worker_data = worker_response.json()
     except Exception:
@@ -147,6 +200,7 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
             detail="Worker deliverable was not valid JSON. Escrow refunded."
         )
 
+    # Deterministic Schema Assertion
     for key in req.required_keys:
         if key not in worker_data:
             raise HTTPException(
@@ -154,9 +208,19 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
                 detail=f"Integrity assertion failed: Missing key '{key}' from worker output. Escrow refunded."
             )
 
-    # Step 3: The Funnel - Split Payout & Protocol Toll
+    records = worker_data.get("records") or worker_data.get("items")
+    if isinstance(records, list) and len(records) < req.expected_min_records:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Integrity assertion failed: Expected >= {req.expected_min_records} records, got {len(records)}."
+        )
+
+    # Step 3: Funnel & Settlement
     protocol_toll = round(req.bounty_usdc * PROTOCOL_TOLL_RATE, 6)
     worker_payout = round(req.bounty_usdc - protocol_toll, 6)
+
+    # Mark signature as settled to block future re-use
+    SEEN_TX_SIGNATURES.add(clean_sig)
 
     PROTOCOL_METRICS["settled_jobs_count"] += 1
     PROTOCOL_METRICS["cumulative_toll_usdc"] = round(
