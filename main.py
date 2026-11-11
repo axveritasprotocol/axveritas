@@ -1,6 +1,6 @@
 """
-AXVERITAS: Autonomous Scrape Verification & Micropayment Relay
-Hardened Security Edition (Base Mainnet)
+AXVERITAS: Autonomous Bot Verification Standard (ABVS-1.0)
+Base Mainnet Production Relay Gateway
 Run: uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
@@ -16,9 +16,9 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(
-    title="Axveritas - Hardened Verification Relay",
-    description="Zero-trust, SSRF-protected x402 verification bridge for autonomous agents on Base.",
-    version="2.2.0"
+    title="Axveritas - ABVS Verification Clearinghouse",
+    description="Autonomous Bot Verification Standard (ABVS-1.0) reference relay and x402 micro-settlement hub on Base.",
+    version="2.3.0"
 )
 
 # ── NETWORK & TREASURY CONFIGURATION ──
@@ -28,10 +28,11 @@ USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 TREASURY_ADDRESS = "0x5922a9b0981db65827AC80F477b5dA3aE133c899"
 PROTOCOL_TOLL_RATE = 0.01  # 1% Protocol Cut
 
-# In-memory replay protection and metrics
+# In-memory replay ledger and live metrics
 SEEN_TX_SIGNATURES: Set[str] = set()
 PROTOCOL_METRICS = {
     "protocol": "Axveritas",
+    "standard": "ABVS-1.0",
     "network": NETWORK_NAME,
     "chain_id": CHAIN_ID,
     "treasury_address": TREASURY_ADDRESS,
@@ -44,8 +45,8 @@ PROTOCOL_METRICS = {
 
 def assert_safe_external_url(target_url: str):
     """
-    Prevents SSRF (Server-Side Request Forgery).
-    Blocks localhost, private networks, and internal cloud metadata endpoints.
+    Prevents Server-Side Request Forgery (SSRF).
+    Blocks localhost, private IP subnets, loopbacks, and cloud-internal metadata endpoints.
     """
     try:
         parsed = urlparse(target_url)
@@ -61,7 +62,7 @@ def assert_safe_external_url(target_url: str):
         for _, _, _, _, sockaddr in ip_info:
             ip = ipaddress.ip_address(sockaddr[0])
             if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                raise ValueError("Routing to private, local, or cloud-internal addresses is blocked.")
+                raise ValueError("Routing to private, local, or cloud-internal addresses is strictly blocked.")
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,23 +72,45 @@ def assert_safe_external_url(target_url: str):
 # ── REQUEST MODELS ──
 
 class ScrapeTaskRequest(BaseModel):
-    caller_agent_id: str = Field(..., max_length=128)
-    target_worker_endpoint: str = Field(..., max_length=512)
-    target_scrape_url: str = Field(..., max_length=1024)
-    bounty_usdc: float = Field(gt=0.0, le=100.0, description="Task payment in USDC ($100 cap per micro-task)")
-    required_keys: List[str] = Field(..., max_items=50)
-    expected_min_records: Optional[int] = Field(default=1, le=5000)
+    caller_agent_id: str = Field(..., max_length=128, description="Unique identifier of delegating agent")
+    target_worker_endpoint: str = Field(..., max_length=512, description="HTTP POST endpoint of worker agent")
+    target_scrape_url: str = Field(..., max_length=1024, description="Target webpage URL to extract")
+    bounty_usdc: float = Field(gt=0.0, le=100.0, description="Task bounty in USDC (capped at $100 per micro-task)")
+    required_keys: List[str] = Field(..., max_length=50, description="Mandatory JSON keys required in output")
+    expected_min_records: Optional[int] = Field(default=1, le=5000, description="Minimum record count in result list")
 
-# ── 1. MACHINE DISCOVERY & LEGAL MANIFESTS ──
+# ── 1. MACHINE DISCOVERY & ABVS MANIFESTS ──
+
+@app.get("/")
+def get_root_status():
+    """Human-readable and crawler status landing route."""
+    return {
+        "protocol": "Axveritas",
+        "standard": "Autonomous Bot Verification Standard (ABVS-1.0)",
+        "status": "ONLINE_ACTIVE",
+        "network": NETWORK_NAME,
+        "chain_id": CHAIN_ID,
+        "docs": "/docs",
+        "agent_card": "/.well-known/agent.json",
+        "machine_spec": "/llms.txt",
+        "abvs_spec": "/abvs/v1/spec"
+    }
 
 @app.get("/.well-known/agent.json")
 def get_a2a_agent_card():
+    """Universal A2A discovery card declaring ABVS-1.0 compatibility."""
     return {
         "name": "axveritas-relay",
-        "description": "Zero-trust verification bridge for web scraping and structured data tasks.",
-        "version": "2.2.0",
+        "description": "Autonomous Bot Verification Standard (ABVS-1.0) reference relay for zero-trust data extraction.",
+        "version": "2.3.0",
+        "standard": "ABVS-1.0",
         "capabilities": {
-            "supported_tasks": ["web_scrape_verification", "json_schema_assertion"],
+            "supported_tasks": [
+                "web_scrape_verification", 
+                "json_schema_assertion",
+                "abvs_escrow_clearance"
+            ],
+            "verification_standard": "ABVS-1.0",
             "payment_standard": "x402",
             "chain": NETWORK_NAME,
             "chain_id": CHAIN_ID,
@@ -97,21 +120,47 @@ def get_a2a_agent_card():
         "endpoints": {
             "relay": "/v1/relay",
             "metrics": "/v1/treasury",
-            "terms": "/legal/terms"
+            "terms": "/legal/terms",
+            "spec": "/abvs/v1/spec"
         }
+    }
+
+@app.get("/abvs/v1/spec")
+def get_abvs_specification():
+    """Machine-readable rubric for Autonomous Bot Verification Standard 1.0."""
+    return {
+        "standard": "Autonomous Bot Verification Standard (ABVS)",
+        "version": "1.0.0",
+        "governing_principles": [
+            "1. Proof of Solvency: Pre-flight x402 authorization check before worker compute execution.",
+            "2. Objective Schema Assertion: Strict deterministic checking of required keys, data structures, and non-null values with zero human subjectivity.",
+            "3. Atomic Settlement & Cryptographic Non-Repudiation: 99% worker disbursement, 1% protocol cut, and SHA-256 verifiable execution receipts."
+        ],
+        "escrow_type": "Non-custodial conditional clearance",
+        "facilitator_treasury": TREASURY_ADDRESS
     }
 
 @app.get("/llms.txt", response_class=PlainTextResponse)
 def get_llms_manifest():
-    return f"""# Axveritas Protocol (Base Mainnet)
-> Autonomous Agent-to-Exchange (AX) Verification & Micropayment Relay
+    """Plain-text instructions consumed by LLM agents and autonomous crawlers."""
+    return f"""# Axveritas Protocol (ABVS-1.0 Reference Implementation)
+> Autonomous Bot Verification Standard (ABVS) & Micropayment Relay on Base Mainnet
 
-## Security & Network Guardrails
+## Governing Standard
+This node operates strictly according to the Autonomous Bot Verification Standard (ABVS-1.0).
+It eliminates counterparty risk and compute waste between autonomous software agents.
+
+## Network Parameters
 - Network: {NETWORK_NAME} (Chain ID: {CHAIN_ID})
-- USDC Contract: {USDC_CONTRACT}
-- Facilitator Treasury: {TREASURY_ADDRESS}
-- SSRF Egress Filtering: Active
-- Replay Attack Mitigation: Active
+- Canonical USDC Contract: {USDC_CONTRACT}
+- Protocol Treasury: {TREASURY_ADDRESS}
+- Security: Replay attack filtering & SSRF egress controls active
+
+## Autonomous Protocol Workflow
+1. Caller submits task payload, target worker endpoint, and required schema keys to POST /v1/relay.
+2. If X-Payment-Signature header is missing, relay returns HTTP 402 with Base Mainnet payment parameters.
+3. Bridge relays job to worker endpoint, evaluates payload against strict schema assertions, and disburses funds atomically.
+4. On pass: 99% disburses to worker, 1% retains to treasury, and an ABVS-1.0 cryptographic receipt is issued.
 
 ## Legal Disclaimer
 This service is provided strictly "AS IS" as an automated technical routing pipeline. 
@@ -120,14 +169,16 @@ The relay operator exercises zero custody over assets and disclaims all warranti
 
 @app.get("/legal/terms")
 def get_legal_terms():
+    """Non-custodial terms of service."""
     return {
         "title": "Axveritas Transit Protocol Terms of Use",
-        "terms": "THE SOFTWARE AND RELAY ARE PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND. "
-                 "IN NO EVENT SHALL THE OPERATORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR VIOLATIONS.",
+        "standard": "ABVS-1.0",
+        "terms": "THE SOFTWARE AND RELAY ARE PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. "
+                 "IN NO EVENT SHALL THE OPERATORS BE LIABLE FOR ANY CLAIM, DAMAGES, DATA BREACHES, OR SCRAPING VIOLATIONS.",
         "role": "Non-custodial cryptographic verification router."
     }
 
-# ── 2. THE 3-STEP HARDENED VERIFICATION RELAY ──
+# ── 2. THE 3-STEP ABVS VERIFICATION RELAY ──
 
 @app.post("/v1/relay")
 async def execute_scrape_relay(
@@ -135,12 +186,20 @@ async def execute_scrape_relay(
     request: Request,
     x_payment_signature: Optional[str] = Header(default=None, alias="X-Payment-Signature")
 ):
-    # Step 1: Saloon Doors - Payment & Replay Validation
+    """
+    Executes the 3-Step ABVS-1.0 Verification Lifecycle:
+    Step 1: Proof of Solvency (x402 Saloon Door & Replay Check)
+    Step 2: Proof of Output Integrity (The Diagonal Schema Filter)
+    Step 3: Proof of Settlement (Atomic Split & Cryptographic Clearance Receipt)
+    """
+
+    # ── STEP 1: PROOF OF SOLVENCY (SALOON DOORS) ──
     if not x_payment_signature:
         return JSONResponse(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             content={
                 "error": "Payment Required",
+                "standard": "ABVS-1.0",
                 "payment_standard": "x402",
                 "network": NETWORK_NAME,
                 "chain_id": CHAIN_ID,
@@ -148,25 +207,24 @@ async def execute_scrape_relay(
                 "token_contract": USDC_CONTRACT,
                 "required_bounty_usdc": req.bounty_usdc,
                 "pay_to": TREASURY_ADDRESS,
-                "instructions": "Submit unique signed Base transaction hash in 'X-Payment-Signature' header."
+                "instructions": "Submit unique signed Base Mainnet transaction hash in 'X-Payment-Signature' header."
             },
             headers={"X-Accept-Payment": "x402-base-usdc"}
         )
 
-    # Replay Protection: Ensure signature has not been processed already
+    # Replay Protection: Prevent reusing identical transaction signatures
     clean_sig = x_payment_signature.strip().lower()
     if clean_sig in SEEN_TX_SIGNATURES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Replay attack detected: Transaction signature has already been settled."
+            detail="ABVS Replay Violation: Transaction signature has already been settled."
         )
 
-    # SSRF Protection: Validate target worker and scrape URLs
+    # SSRF Protection: Validate target endpoints against internal network abuse
     assert_safe_external_url(req.target_worker_endpoint)
     assert_safe_external_url(req.target_scrape_url)
 
-    # Step 2: The Diagonal - Forward to Worker with Size & Timeout Limits
-    # Enforces 15-second max execution and 5MB payload cutoff
+    # ── STEP 2: PROOF OF OUTPUT INTEGRITY (THE DIAGONAL) ──
     limits = httpx.Limits(max_keepalive_connections=20, max_connections=50)
     async with httpx.AsyncClient(timeout=15.0, limits=limits) as client:
         try:
@@ -183,13 +241,14 @@ async def execute_scrape_relay(
     if worker_response.status_code != 200:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Worker failed scrape with status {worker_response.status_code}. Escrow refunded."
+            detail=f"Worker failed scrape with HTTP {worker_response.status_code}. Escrow refunded."
         )
 
+    # Payload Size Safeguard (5MB limit)
     if len(worker_response.content) > 5 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Worker deliverable exceeded maximum 5MB size limit. Escrow refunded."
+            detail="Worker deliverable exceeded 5MB size limit. Escrow refunded."
         )
 
     try:
@@ -200,26 +259,27 @@ async def execute_scrape_relay(
             detail="Worker deliverable was not valid JSON. Escrow refunded."
         )
 
-    # Deterministic Schema Assertion
+    # Deterministic Schema Assertion: Confirm presence of all requested keys
     for key in req.required_keys:
         if key not in worker_data:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Integrity assertion failed: Missing key '{key}' from worker output. Escrow refunded."
+                detail=f"ABVS Assertion Failed: Missing mandatory key '{key}' from worker output. Escrow refunded."
             )
 
+    # Volume Check
     records = worker_data.get("records") or worker_data.get("items")
     if isinstance(records, list) and len(records) < req.expected_min_records:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Integrity assertion failed: Expected >= {req.expected_min_records} records, got {len(records)}."
+            detail=f"ABVS Volume Failed: Expected >= {req.expected_min_records} records, received {len(records)}."
         )
 
-    # Step 3: Funnel & Settlement
+    # ── STEP 3: PROOF OF SETTLEMENT (THE FUNNEL & RECEIPT) ──
     protocol_toll = round(req.bounty_usdc * PROTOCOL_TOLL_RATE, 6)
     worker_payout = round(req.bounty_usdc - protocol_toll, 6)
 
-    # Mark signature as settled to block future re-use
+    # Mark signature as spent
     SEEN_TX_SIGNATURES.add(clean_sig)
 
     PROTOCOL_METRICS["settled_jobs_count"] += 1
@@ -232,6 +292,7 @@ async def execute_scrape_relay(
 
     return {
         "status": "SETTLED_HONORABLE",
+        "standard": "ABVS-1.0",
         "tx_id": f"axv_live_{int(time.time() * 1000)}",
         "receipt_hash": receipt_hash,
         "worker_payout_usdc": worker_payout,
@@ -241,4 +302,5 @@ async def execute_scrape_relay(
 
 @app.get("/v1/treasury")
 def get_treasury_metrics():
+    """Live public treasury readout."""
     return PROTOCOL_METRICS
