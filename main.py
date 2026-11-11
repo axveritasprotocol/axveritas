@@ -90,7 +90,7 @@ class ScrapeTaskRequest(BaseModel):
 
 # ── 1. MACHINE DISCOVERY & ABVS MANIFESTS ──
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "POST", "HEAD"])
 def get_root_status():
     """Human-readable and crawler status landing route."""
     return {
