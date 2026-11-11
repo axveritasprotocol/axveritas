@@ -1,6 +1,6 @@
 """
 AXVERITAS: Autonomous Scrape Verification & Micropayment Relay
-Base Sepolia Testnet Edition
+Base Mainnet Production Edition
 Run: uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
@@ -19,11 +19,11 @@ app = FastAPI(
 )
 
 # ── NETWORK & TREASURY CONFIGURATION ──
-NETWORK_NAME = "base-sepolia"
-CHAIN_ID = 84532
-TESTNET_USDC_CONTRACT = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+NETWORK_NAME = "base"
+CHAIN_ID = 8453
+USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
-# PASTE YOUR COINBASE WALLET ETHEREUM / BASE SEPOLIA 0x ADDRESS HERE:
+# COINBASE WALLET BASE RECEIVING ADDRESS:
 TREASURY_ADDRESS = "0x5922a9b0981db65827AC80F477b5dA3aE133c899"
 PROTOCOL_TOLL_RATE = 0.01  # 1% Protocol Cut
 
@@ -33,8 +33,8 @@ PROTOCOL_METRICS = {
     "chain_id": CHAIN_ID,
     "treasury_address": TREASURY_ADDRESS,
     "settled_jobs_count": 0,
-    "cumulative_test_toll_usdc": 0.0,
-    "status": "TESTNET_ONLINE_ACTIVE"
+    "cumulative_toll_usdc": 0.0,
+    "status": "MAINNET_ONLINE_ACTIVE"
 }
 
 class ScrapeTaskRequest(BaseModel):
@@ -59,7 +59,7 @@ def get_a2a_agent_card():
             "chain": NETWORK_NAME,
             "chain_id": CHAIN_ID,
             "token": "USDC",
-            "token_contract": TESTNET_USDC_CONTRACT
+            "token_contract": USDC_CONTRACT
         },
         "endpoints": {
             "relay": "/v1/relay",
@@ -70,17 +70,17 @@ def get_a2a_agent_card():
 
 @app.get("/llms.txt", response_class=PlainTextResponse)
 def get_llms_manifest():
-    return f"""# Axveritas Protocol (Base Sepolia)
+    return f"""# Axveritas Protocol (Base Mainnet)
 > Autonomous Agent-to-Exchange (AX) Verification & Micropayment Relay
 
 ## Network Parameters
 - Network: {NETWORK_NAME} (Chain ID: {CHAIN_ID})
-- Testnet USDC Contract: {TESTNET_USDC_CONTRACT}
+- USDC Contract: {USDC_CONTRACT}
 - Facilitator Treasury: {TREASURY_ADDRESS}
 
 ## Workflow
 1. Caller sends task parameters and required schema keys to POST /v1/relay.
-2. If X-Payment-Signature header is missing, bridge returns HTTP 402 with Base Sepolia payment details.
+2. If X-Payment-Signature header is missing, bridge returns HTTP 402 with Base Mainnet payment details.
 3. Bridge relays job to worker endpoint, evaluates payload against strict schema assertions, and disburses funds atomically.
 
 ## Legal Disclaimer
@@ -112,12 +112,12 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
                 "network": NETWORK_NAME,
                 "chain_id": CHAIN_ID,
                 "token": "USDC",
-                "token_contract": TESTNET_USDC_CONTRACT,
+                "token_contract": USDC_CONTRACT,
                 "required_bounty_usdc": req.bounty_usdc,
                 "pay_to": TREASURY_ADDRESS,
-                "instructions": "Submit signed Base Sepolia transaction hash in 'X-Payment-Signature' header."
+                "instructions": "Submit signed Base Mainnet transaction hash in 'X-Payment-Signature' header."
             },
-            headers={"X-Accept-Payment": "x402-base-sepolia-usdc"}
+            headers={"X-Accept-Payment": "x402-base-usdc"}
         )
 
     # Step 2: The Diagonal - Forward to Worker & Assert Schema
@@ -159,8 +159,8 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
     worker_payout = round(req.bounty_usdc - protocol_toll, 6)
 
     PROTOCOL_METRICS["settled_jobs_count"] += 1
-    PROTOCOL_METRICS["cumulative_test_toll_usdc"] = round(
-        PROTOCOL_METRICS["cumulative_test_toll_usdc"] + protocol_toll, 6
+    PROTOCOL_METRICS["cumulative_toll_usdc"] = round(
+        PROTOCOL_METRICS["cumulative_toll_usdc"] + protocol_toll, 6
     )
 
     receipt_raw = f"{req.caller_agent_id}->{req.target_worker_endpoint}:{worker_payout}:{protocol_toll}:{time.time()}"
@@ -168,7 +168,7 @@ async def execute_scrape_relay(req: ScrapeTaskRequest, request: Request):
 
     return {
         "status": "SETTLED_HONORABLE",
-        "tx_id": f"axv_test_{int(time.time() * 1000)}",
+        "tx_id": f"axv_live_{int(time.time() * 1000)}",
         "receipt_hash": receipt_hash,
         "worker_payout_usdc": worker_payout,
         "protocol_toll_retained": protocol_toll,
