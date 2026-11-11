@@ -14,11 +14,20 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Response, status, Header
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Axveritas - ABVS Verification Clearinghouse",
     description="Autonomous Bot Verification Standard (ABVS-1.0) reference relay and x402 micro-settlement hub on Base.",
     version="2.3.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── NETWORK & TREASURY CONFIGURATION ──
