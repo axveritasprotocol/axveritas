@@ -90,7 +90,7 @@ class ScrapeTaskRequest(BaseModel):
 
 # ── 1. MACHINE DISCOVERY & ABVS MANIFESTS ──
 
-@app.api_route("/", methods=["GET", "POST", "HEAD"])
+@app.api_route("/", methods=["GET", "HEAD"])
 def get_root_status():
     """Human-readable and crawler status landing route."""
     return {
@@ -103,6 +103,81 @@ def get_root_status():
         "agent_card": "/.well-known/agent.json",
         "machine_spec": "/llms.txt",
         "abvs_spec": "/abvs/v1/spec"
+    }
+
+@app.post("/")
+async def handle_mcp_or_post_root(request: Request):
+    """
+    Handles MCP (Model Context Protocol) JSON-RPC 2.0 transport handshakes
+    used by Glama, Claude Desktop, and Cursor health checks.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"status": "ONLINE_ACTIVE", "standard": "ABVS-1.0"}
+        )
+
+    # Detect MCP JSON-RPC 2.0 requests
+    if isinstance(body, dict) and body.get("jsonrpc") == "2.0":
+        msg_id = body.get("id")
+        method = body.get("method")
+
+        # 1. MCP Initialization Handshake
+        if method == "initialize":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {"listChanged": False}
+                    },
+                    "serverInfo": {
+                        "name": "axveritas-abvs-relay",
+                        "version": "2.3.0"
+                    }
+                }
+            }
+
+        # 2. MCP Tools Discovery
+        elif method == "tools/list":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "tools": [
+                        {
+                            "name": "axveritas_verify_scrape",
+                            "description": "Zero-trust x402 verification relay for agentic web scraping and structured JSON extraction on Base Mainnet.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "target_worker_endpoint": {"type": "string", "description": "Worker POST endpoint"},
+                                    "target_scrape_url": {"type": "string", "description": "URL to scrape"},
+                                    "bounty_usdc": {"type": "number", "description": "Escrow bounty in USDC"},
+                                    "required_keys": {"type": "array", "items": {"type": "string"}}
+                                },
+                                "required": ["target_worker_endpoint", "target_scrape_url", "bounty_usdc", "required_keys"]
+                            }
+                        }
+                    ]
+                }
+            }
+
+        # 3. Fallback for notifications / other methods
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": {}
+        }
+
+    # Standard fallback for non-RPC POST requests
+    return {
+        "protocol": "Axveritas",
+        "standard": "ABVS-1.0",
+        "status": "ONLINE_ACTIVE"
     }
 
 @app.get("/.well-known/glama.json")
