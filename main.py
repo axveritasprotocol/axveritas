@@ -37,6 +37,34 @@ USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 TREASURY_ADDRESS = "0x5922a9b0981db65827AC80F477b5dA3aE133c899"
 PROTOCOL_TOLL_RATE = 0.01  # 1% Protocol Cut
 
+from web3 import Web3
+
+BASE_RPC_URL = "https://mainnet.base.org"
+USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".lower()
+TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL))
+
+def verify_base_usdc_payment(tx_hash: str, min_usdc: float) -> bool:
+    """Confirms on Base Mainnet that real USDC landed in TREASURY_ADDRESS."""
+    try:
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        if not receipt or receipt.status != 1:
+            return False
+        target_wallet = TREASURY_ADDRESS.lower().replace("0x", "").zfill(64)
+        for log in receipt.logs:
+            if (
+                log.address.lower() == USDC_CONTRACT
+                and len(log.topics) >= 3
+                and log.topics[0].hex().lower() == TRANSFER_TOPIC
+                and log.topics[2].hex().lower().endswith(target_wallet)
+            ):
+                amount_usdc = int(log.data.hex(), 16) / 1_000_000
+                if amount_usdc >= min_usdc:
+                    return True
+        return False
+    except Exception:
+        return False
+
 # In-memory replay ledger and live metrics
 SEEN_TX_SIGNATURES: Set[str] = set()
 PROTOCOL_METRICS = {
