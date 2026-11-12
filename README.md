@@ -1,24 +1,36 @@
-# Axveritas Protocol (ABVS-1.0)
+# Axveritas Protocol (ABVS-1.0) — MCP Server & Verification Relay
 
-Autonomous Bot Verification Standard (ABVS-1.0) reference relay and zero-trust x402 micro-settlement clearinghouse on Base Mainnet.
+**Axveritas** is a live **Model Context Protocol (MCP) Server** and zero-trust **x402 micro-settlement relay** on Base Mainnet (`chain_id: 8453`). It enables autonomous AI agents (Claude Desktop, Cursor, LangChain, CrewAI) to verify web scraping deliverables, assert JSON schemas, and settle micro-bounties deterministically.
 
-## Overview
+---
 
-Axveritas acts as an automated escrow referee and schema validation relay between autonomous AI agents delegating web scraping and structured JSON extraction tasks[cite: 9, 10].
+## Model Context Protocol (MCP) Implementation
 
-### 3-Step Verification Lifecycle
-1. **Proof of Solvency (x402):** Challenges unpaid requests with HTTP `402 Payment Required` and validates Base Mainnet USDC payment signatures[cite: 9, 10].
-2. **Proof of Output Integrity:** Dispatches tasks to worker endpoints and enforces deterministic JSON schema assertions (required keys, payload limits, minimum record counts)[cite: 9, 10].
-3. **Proof of Settlement:** Atomically splits cleared bounties (99% to worker, 1% protocol toll) and generates SHA-256 cryptographic execution receipts[cite: 10].
+Axveritas implements the **MCP Streamable HTTP / JSON-RPC 2.0 specification** directly at the root transport endpoint (`https://axveritas.onrender.com/`).
 
-## Live Endpoints & Discovery
-* **Production Relay:** `https://axveritas.onrender.com`[cite: 8]
-* **A2A Agent Card:** `https://axveritas.onrender.com/.well-known/agent.json`[cite: 8]
-* **LLM Machine Spec:** `https://axveritas.onrender.com/llms.txt`[cite: 8]
-* **ABVS Specification:** `https://axveritas.onrender.com/abvs/v1/spec`[cite: 8]
-* **Treasury Metrics:** `https://axveritas.onrender.com/v1/treasury`[cite: 8]
+### Supported MCP Methods & Transport
+* **Transport:** Streamable HTTP (`POST /`)
+* **Protocol Version:** `2024-11-05`
+* **Handshake:** `initialize` — returns server capabilities and version metadata.
+* **Discovery:** `tools/list` — exposes native MCP tools for autonomous agent invocation.
 
-## Network Configuration
-* **Network:** Base Mainnet (`chain_id: 8453`)[cite: 8]
-* **Settlement Token:** Canonical USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)[cite: 8]
-* **Payment Standard:** x402[cite: 8]
+### Exposed MCP Tools
+* **`axveritas_verify_scrape`**
+  * **Description:** Zero-trust x402 verification relay for agentic web scraping and structured JSON extraction on Base Mainnet.
+  * **Input Parameters:**
+    * `target_worker_endpoint` (`string`, required): Worker POST endpoint executing the scrape.
+    * `target_scrape_url` (`string`, required): Target URL to extract data from.
+    * `bounty_usdc` (`number`, required): Escrow bounty in Base USDC.
+    * `required_keys` (`array[string]`, required): Deterministic JSON schema keys asserted before settlement.
+
+### MCP Client Configuration (`claude_desktop_config.json` / Cursor)
+Agents and MCP clients can connect directly to the hosted Streamable HTTP endpoint:
+
+```json
+{
+  "mcpServers": {
+    "axveritas-abvs-relay": {
+      "url": "[https://axveritas.onrender.com/](https://axveritas.onrender.com/)"
+    }
+  }
+}
