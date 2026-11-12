@@ -324,13 +324,21 @@ async def execute_scrape_relay(
                 "chain_id": CHAIN_ID,
                 "token": "USDC",
                 "token_contract": USDC_CONTRACT,
-                "required_bounty_usdc": req.bounty_usdc,
+                "required_bounty_usdc": round(max(req.bounty_usdc * PROTOCOL_TOLL_RATE, 0.001), 6),
                 "pay_to": TREASURY_ADDRESS,
                 "instructions": "Submit unique signed Base Mainnet transaction hash in 'X-Payment-Signature' header."
             },
             headers={"X-Accept-Payment": "x402-base-usdc"}
         )
 
+# Verify real Base Mainnet USDC payment on-chain
+    protocol_fee = round(max(req.bounty_usdc * PROTOCOL_TOLL_RATE, 0.001), 6)
+    if not verify_base_usdc_payment(x_payment_signature.strip(), protocol_fee):
+        raise HTTPException(
+            status_code=402,
+            detail=f"Unverified Base Mainnet USDC payment. Send at least {protocol_fee} USDC to {TREASURY_ADDRESS} and pass tx_hash in X-Payment-Signature."
+        )
+    
     # Replay Protection: Prevent reusing identical transaction signatures
     clean_sig = x_payment_signature.strip().lower()
     if clean_sig in SEEN_TX_SIGNATURES:
