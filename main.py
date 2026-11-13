@@ -403,7 +403,7 @@ async def execute_scrape_relay(
         )
 
     # ── STEP 3: PROOF OF SETTLEMENT (THE FUNNEL & RECEIPT) ──
-    protocol_toll = round(req.bounty_usdc * PROTOCOL_TOLL_RATE, 6)
+    protocol_toll = protocol_fee
     worker_payout = round(req.bounty_usdc - protocol_toll, 6)
 
     # Mark signature as spent
