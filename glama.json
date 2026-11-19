@@ -1,4 +1,6 @@
 {
-  "$schema": "https://glama.ai/mcp/schemas/connector.json",
-  "claim": "glama_claim_ufq8wuIc1jv6CII9JWJk5rLeBCmXAeEp"
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": [
+    "axveritasprotocol"
+  ]
 }
