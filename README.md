@@ -5,8 +5,8 @@
 Open-source Python Model Context Protocol (MCP) server and `ABVS-1.0` verification gateway (`main.py`) for autonomous AI agents on Base Mainnet (Chain ID: 8453).
 
 ## Tools Provided
-- **`axveritas_preflight_check`** (`POST /v1/preflight`): Pre-flight dead-end URL health check using shared domain-health telemetry (`$0.001 USDC`).
-- **`axveritas_scrape_verified`** (`POST /v1/scrape`): Direct schema-verified web extraction returning clean JSON and an `ABVS-1.0` SHA-256 receipt (`$0.015 USDC`).
+- **`axveritas_preflight_check`** (`POST /v1/preflight`): Pre-flight dead-end URL health check using shared domain-health telemetry (`USDC`).
+- **`axveritas_scrape_verified`** (`POST /v1/scrape`): Direct schema-verified web extraction returning clean JSON and an `ABVS-1.0` SHA-256 receipt (`USDC`).
 - **`axveritas_verify_relay`** (`POST /v1/relay`): Non-custodial schema verification relay between buyer and worker agents (`1%` protocol toll).
 
 ## Self-Hosting & Local Installation
