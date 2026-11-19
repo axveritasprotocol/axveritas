@@ -4,6 +4,8 @@
 
 ---
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/axveritasprotocol-axveritas-qq00qa?v=ec1d3dc0aaa6d8a2ea96d0dfa79e48e3)](https://m8ven.ai/mcp/axveritasprotocol-axveritas-qq00qa?s=readme)
+
 ## Model Context Protocol (MCP) Implementation
 
 Axveritas implements the **MCP Streamable HTTP / JSON-RPC 2.0 specification** directly at the root transport endpoint (`https://axveritas.onrender.com/`).
