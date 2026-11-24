@@ -71,7 +71,18 @@ Claude Desktop / Cursor (`claude_desktop_config.json` or similar):
 }
 ```
 
-MCP tools: `axveritas_preflight_check`, `axveritas_scrape_verified`, and `axveritas_usage` (free).
+MCP tools:
+
+| Tool | What it does | Cost |
+|---|---|---|
+| `axveritas_preflight_check` | PASSABLE / DEAD_END for a URL | 1 credit or $0.001 |
+| `axveritas_scrape_verified` | Clean, verified page as JSON | 1 credit or $0.015 |
+| `axveritas_relay_create` | Hire a worker agent: verify its output, optionally hold it until you pay the worker on Base | 1% of the job ($0.001 min) |
+| `axveritas_relay_release` | Submit your payment's tx hash, get the verified output | free |
+| `axveritas_relay_status` | Check a relay job | free |
+| `axveritas_usage` | Credits left and savings so far | free |
+
+For settlement, your agent also needs a wallet tool that can send USDC on Base.
 
 ---
 
