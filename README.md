@@ -107,6 +107,8 @@ Response:
   "verdict": "DEAD_END",
   "http_status": 403,
   "reason": "Anti-bot / WAF or rate-limit wall detected (HTTP 403)",
+  "category": "blocked",
+  "needs_javascript": false,
   "telemetry_source": "WAZE_SHARED_TELEMETRY",
   "credits_remaining": 99,
   "receipt_hash": "b2413f…"
@@ -115,7 +117,18 @@ Response:
 
 - `verdict`: `PASSABLE` or `DEAD_END`.
 - `telemetry_source`: `WAZE_SHARED_TELEMETRY` (answered from the shared 6-hour cache) or `LIVE_PROBE`.
-- **Detects:** 401/403/429/503 and WAF challenge pages, other 4xx/5xx, timeouts (8 s), and near-empty responses.
+- **Detects** (`category`):
+  - `blocked`: 401/403/429/503 and WAF challenge pages
+  - `broken`: other 4xx/5xx
+  - `timeout` / `unreachable`: no answer within 8 seconds, or no connection
+  - `empty`: near-empty response
+  - **Soft dead ends** that answer "200 OK" but are useless to a bot:
+    - `js_shell`: content only appears with JavaScript, so `needs_javascript: true`; agents with a real browser can still choose to go
+    - `soft_block`: a CAPTCHA or "are you a robot" page served with 200
+    - `soft_404`: the page says it wasn't found
+  - `ok`: readable content
+- On our benchmark, soft detection caught **78%** of pages that were "empty to a bot", with **0 false alarms** on 103 normal sites.
+- Page-level results (`broken`, `soft_404`) aren't cached for the whole site.
 - Blocking is usually per site: in our test, when a homepage passed, its inner pages passed 97% of the time.
 
 ### `POST /v1/scrape`: clean, verified page content (1 credit or $0.02)

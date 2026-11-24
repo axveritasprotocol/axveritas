@@ -69,6 +69,6 @@ In plain terms, an AI reading the cleaned page instead of the raw HTML reads rou
 1. **"1 in 4 websites block bots" is real and defensible** (27%), and on protected retail, travel and finance sites it's **44%**. Both numbers are probably higher from cloud servers.
 2. **The cost of a blocked page itself is small** (about 1,100 tokens). The bigger costs are wasted time, retries, the agent reasoning about the failure, and getting your server's IP flagged.
 3. **The biggest token savings are on pages that do load:** cleaning cuts a page by **96%** before the AI reads it.
-4. **Product opportunity:** 10–13% of "loaded" pages are really empty or soft-blocked. Detecting those would make Axveritas noticeably smarter.
+4. **Now detected (v3.13, Nov 2026):** 10–13% of "loaded" pages are really empty or soft-blocked. Axveritas now flags these "soft dead ends" (JavaScript-only pages, CAPTCHA walls served as 200, soft 404s). Re-checking this benchmark's pages, it caught **78%** of those "empty to a bot" pages, with **0 false alarms** on a sample of 90 normal pages and 13 well-known sites.
 
 *All tests ran from one home internet connection on 2026-11-23 and are a snapshot; results change as sites update their bot defenses. The code is in [`benchmark/`](benchmark/), so anyone can re-run it.*
