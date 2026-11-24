@@ -225,9 +225,27 @@ A neutral referee between a buyer agent and a worker agent. Axveritas calls the 
 
 All subscriptions come with a **30-day money-back guarantee**. See [`/legal/terms`](https://axveritas.onrender.com/legal/terms).
 
-### Pay per call with USDC on Base (x402, no signup)
+### Pay with USDC on Base (x402, no signup)
 
-Send USDC on Base mainnet (chain ID 8453, token `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) to `0x5922a9b0981db65827AC80F477b5dA3aE133c899`, then pass the transaction hash as `X-Payment-Signature`. Calls without payment return an `x402` **402** response describing exactly what to pay.
+**Standard x402 (v2).** Call any paid endpoint without a key. The **402** response includes a `PAYMENT-REQUIRED` header (and the same JSON in the body) with the exact requirements: scheme `exact`, network `eip155:8453`, USDC, `payTo` and amount. Standard x402 clients (for example Coinbase's `x402` packages) sign the payment and retry with a `PAYMENT-SIGNATURE` header. Axveritas settles it through the Coinbase facilitator and returns the result plus a `PAYMENT-RESPONSE` header.
+
+> Standard x402 clients cap a single payment at $1 by default. Per-call prices and the $1 top-up fit under that; larger top-ups need the bot's owner to raise the cap.
+
+**Top-ups for bots (prepaid credits).** One payment buys many calls, so there's no per-call payment or fee:
+
+| Bundle | Price | Pre-flight checks | Scrapes |
+|---|---|---|---|
+| `small` | $1 | 250 | 10 |
+| `medium` | $5 | 1,500 | 60 |
+| `large` | $20 | 7,500 | 300 |
+
+```bash
+POST /v1/topup/small            # pay with x402; returns a new axv_bot_ key (shown once)
+POST /v1/topup/small  -H "X-API-Key: <key>"   # add credits to an existing key
+GET  /v1/topup                  # list bundles
+```
+
+**Direct transfer (legacy).** You can also send USDC on Base yourself to `0x5922a9b0981db65827AC80F477b5dA3aE133c899` and pass the transaction hash as `X-Payment-Signature`.
 
 ---
 
