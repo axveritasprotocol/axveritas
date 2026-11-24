@@ -143,7 +143,44 @@ Body `{"email": "you@company.com"}`. One key per email and per network.
 
 ### `POST /v1/relay`: agent-to-agent verification relay (beta; 1% fee, $0.001 min, REST only)
 
-A neutral referee between a buyer agent and a worker endpoint. Axveritas calls the worker, checks its JSON has the `required_keys` (on the top-level object or on every record) and at least `expected_min_records` records, and only then returns it to the buyer. Records are the items of a list response, or of a `records` / `data` / `items` / `results` list. Payment between buyer and worker is up to them today; automatic USDC settlement is coming next.
+A neutral referee between a buyer agent and a worker agent. Axveritas calls the worker, checks its JSON has the `required_keys` (on the top-level object or on every record) and at least `expected_min_records` records. Records are the items of a list response, or of a `records` / `data` / `items` / `results` list.
+
+**Direct mode** (no `worker_wallet`): the verified output is returned right away.
+
+**Settlement mode** (with `worker_wallet`): verify → pay → release. Axveritas holds the *data*, never the money.
+
+1. **Create the job.** The fee (1% of `bounty_usdc`) is charged up front.
+
+   ```json
+   POST /v1/relay
+   {
+     "caller_agent_id": "buyer-bot",
+     "target_worker_endpoint": "https://worker.example/run",
+     "target_scrape_url": "https://shop.example",
+     "bounty_usdc": 1.0,
+     "required_keys": ["name", "price"],
+     "expected_min_records": 3,
+     "worker_wallet": "0xWorkerWallet..."
+   }
+   ```
+
+   If the output passes, you get `status: VERIFIED_AWAITING_PAYMENT`, a `job_id`, a secret `release_token`, the `payload_hash` and payment instructions:
+
+   ```json
+   "pay": { "to": "0xWorkerWallet...", "amount_usdc": 0.99, "asset": "0x8335…2913", "network": "base", "chain_id": 8453, "deadline": "2026-11-24T19:30:00Z" }
+   ```
+
+2. **Pay the worker directly** in USDC on Base (at least `amount_usdc`, before the 30-minute deadline).
+3. **Release the data:**
+
+   ```json
+   POST /v1/relay/{job_id}/release
+   { "release_token": "…", "payment_tx": "0x…" }
+   ```
+
+   Axveritas confirms on-chain that the payment went to the worker's wallet, for enough USDC, inside the job's time window, and wasn't used for anything else. Then it returns `status: RELEASED` with the `verified_payload`. Check it against `payload_hash` (SHA-256 of the JSON with sorted keys). Calling release again with the same transaction returns the data again.
+
+`GET /v1/relay/{job_id}` shows a job's status (`AWAITING_PAYMENT`, `RELEASED` or `EXPIRED`) without the data, so workers can see when they've been paid. Held data is deleted 24 hours after release or expiry.
 
 ### Errors
 
@@ -151,12 +188,14 @@ A neutral referee between a buyer agent and a worker endpoint. Axveritas calls t
 |---|---|---|
 | `401` | Missing or invalid key | Check `X-API-Key` / `?api_key=` |
 | `402` | Out of credits, or payment required | The message includes upgrade links; or pay per call with USDC |
-| `403` | Target is a private or local address (SSRF protection) | Use a public URL |
-| `409` | USDC transaction hash already used | Send a new payment |
+| `403` | Target is a private or local address (SSRF protection), or wrong `release_token` | Use a public URL; check the token |
+| `409` | USDC transaction hash already used, or relay job already released with another payment | Send a new payment |
 | `413` | Target page over 5 MB | — |
 | `422` | Target blocked/unavailable for scraping, or `required_keys` missing | Treat the page as unusable |
 | `429` | Trial key already issued, or daily trial capacity reached | Subscribe, or try tomorrow |
+| `410` | Relay job expired, or its payment arrived after the deadline | Create a new job |
 | `502` | Target could not be reached | Retry later or skip |
+| `503` | Base network lookup busy | Retry in a minute |
 
 ---
 
