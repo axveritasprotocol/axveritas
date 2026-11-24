@@ -75,9 +75,9 @@ MCP tools:
 
 | Tool | What it does | Cost |
 |---|---|---|
-| `axveritas_preflight_check` | PASSABLE / DEAD_END for a URL | 1 credit or $0.001 |
-| `axveritas_scrape_verified` | Clean, verified page as JSON | 1 credit or $0.015 |
-| `axveritas_relay_create` | Hire a worker agent: verify its output, optionally hold it until you pay the worker on Base | 1% of the job ($0.001 min) |
+| `axveritas_preflight_check` | PASSABLE / DEAD_END for a URL | 1 credit or $0.005 |
+| `axveritas_scrape_verified` | Clean, verified page as JSON | 1 credit or $0.02 |
+| `axveritas_relay_create` | Hire a worker agent: verify its output, optionally hold it until you pay the worker on Base | 1% of the job ($0.005 min) |
 | `axveritas_relay_release` | Submit your payment's tx hash, get the verified output | free |
 | `axveritas_relay_status` | Check a relay job | free |
 | `axveritas_usage` | Credits left and savings so far | free |
@@ -94,7 +94,7 @@ Authenticate with **one** of:
 - `X-API-Key: <key>` header (or `?api_key=` on the MCP URL)
 - `X-Payment-Signature: <0x Base tx hash>` for pay-per-call USDC (see below)
 
-### `POST /v1/preflight`: is this URL a dead end? (1 credit or $0.001)
+### `POST /v1/preflight`: is this URL a dead end? (1 credit or $0.005)
 
 Request:
 ```json
@@ -118,7 +118,7 @@ Response:
 - **Detects:** 401/403/429/503 and WAF challenge pages, other 4xx/5xx, timeouts (8 s), and near-empty responses.
 - Blocking is usually per site: in our test, when a homepage passed, its inner pages passed 97% of the time.
 
-### `POST /v1/scrape`: clean, verified page content (1 credit or $0.015)
+### `POST /v1/scrape`: clean, verified page content (1 credit or $0.02)
 
 Request:
 ```json
@@ -152,7 +152,7 @@ Returns credits left, checks made, dead ends avoided, scrape reduction and estim
 
 Body `{"email": "you@company.com"}`. One key per email and per network.
 
-### `POST /v1/relay`: agent-to-agent verification relay (beta; 1% fee, $0.001 min, REST only)
+### `POST /v1/relay`: agent-to-agent verification relay (beta; 1% fee, $0.005 min)
 
 A neutral referee between a buyer agent and a worker agent. Axveritas calls the worker, checks its JSON has the `required_keys` (on the top-level object or on every record) and at least `expected_min_records` records. Records are the items of a list response, or of a `records` / `data` / `items` / `results` list.
 
@@ -221,7 +221,7 @@ A neutral referee between a buyer agent and a worker agent. Axveritas calls the 
 | **Growth** | $1,000 / mo | 1,000,000 | 50,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
 | **Business** | $5,000 / mo | 6,000,000 | 300,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
 | **Enterprise** | $15,000 / mo | 20,000,000 | 1,000,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
-| **Pay per call** | $0.001 / $0.015 | — | — | USDC on Base (below) |
+| **Pay per call** | $0.005 / check, $0.02 / scrape | — | — | USDC on Base (below) |
 
 All subscriptions come with a **30-day money-back guarantee**. See [`/legal/terms`](https://axveritas.onrender.com/legal/terms).
 
