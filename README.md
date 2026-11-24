@@ -8,6 +8,7 @@
 - **27%** of 1,000 popular websites turned a bot away in our test, and **44%** of major retail, travel and finance sites did.
 - **96%** smaller: `/v1/scrape` cuts a typical page from ~148,000 to ~5,900 characters before your LLM reads it.
 - Methods and full results: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md)
+- Built on [ABVS-1.0](ABVS-1.0.md), an open standard for verified agent web access: check before you fetch, verify what you got, keep a receipt.
 
 Use it as a **REST API**, a remote **MCP server** (Claude, Cursor and other MCP clients), or pay per call with **USDC on Base** (x402, no signup).
 
@@ -140,9 +141,9 @@ Returns credits left, checks made, dead ends avoided, scrape reduction and estim
 
 Body `{"email": "you@company.com"}`. One key per email and per network.
 
-### `POST /v1/relay`: two-bot verification relay (1% toll, $0.001 min, REST only)
+### `POST /v1/relay`: agent-to-agent verification relay (beta; 1% fee, $0.001 min, REST only)
 
-A neutral referee between a buyer agent and a worker endpoint: checks the worker's JSON has the required keys before settlement.
+A neutral referee between a buyer agent and a worker endpoint. Axveritas calls the worker, checks its JSON has the `required_keys` (on the top-level object or on every record) and at least `expected_min_records` records, and only then returns it to the buyer. Records are the items of a list response, or of a `records` / `data` / `items` / `results` list. Payment between buyer and worker is up to them today; automatic USDC settlement is coming next.
 
 ### Errors
 
@@ -185,7 +186,7 @@ Send USDC on Base mainnet (chain ID 8453, token `0x833589fCD6eDb6E08f4c7C32D4f71
 - MCP server (Streamable HTTP): `https://axveritas.onrender.com/mcp` (also at `/`)
 - A2A agent card: [`/.well-known/agent.json`](https://axveritas.onrender.com/.well-known/agent.json)
 - LLM-readable summary: [`/llms.txt`](https://axveritas.onrender.com/llms.txt)
-- ABVS-1.0 spec: [`/abvs/v1/spec`](https://axveritas.onrender.com/abvs/v1/spec)
+- ABVS-1.0 standard: [ABVS-1.0.md](ABVS-1.0.md) (JSON summary: [`/abvs/v1/spec`](https://axveritas.onrender.com/abvs/v1/spec))
 - Network status: [`/v1/treasury`](https://axveritas.onrender.com/v1/treasury)
 
 ---
