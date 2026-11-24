@@ -1,42 +1,64 @@
-# Axveritas MCP Server & ABVS-1.0 Gateway
+# Axveritas: Pre-Flight Checks & Clean Pages for AI Agents
 
 [![M8ven Score](https://m8ven.ai/badge/mcp/axveritasprotocol-axveritas-qq00qa?v=ec1d3dc0aaa6d8a2ea96d0dfa79e48e3)](https://m8ven.ai/mcp/axveritasprotocol-axveritas-qq00qa?s=readme)
 [![axveritasprotocol/axveritas MCP server](https://glama.ai/mcp/servers/axveritasprotocol/axveritas/badges/score.svg)](https://glama.ai/mcp/servers/axveritasprotocol/axveritas)
 
-Open-source Python **Model Context Protocol (MCP)** server and `ABVS-1.0` verification gateway (`main.py`) for autonomous AI agents on Base Mainnet (Chain ID: 8453).
+**For developers building AI agents, RAG pipelines and scrapers.** Ask Axveritas whether a URL is reachable *before* your agent fetches it, and get pages back as clean, verified JSON instead of raw HTML.
 
-## Quick Start: Free Trial Key (No Card Required)
+- **27%** of 1,000 popular websites turned a bot away in our test, and **44%** of major retail, travel and finance sites did.
+- **96%** smaller: `/v1/scrape` cuts a typical page from ~148,000 to ~5,900 characters before your LLM reads it.
+- Methods and full results: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md)
 
-1. Go to **https://axveritas.onrender.com** and click **Get Free Test Key (100 Checks)**. You get 100 pre-flight checks and 10 verified scrapes, one key per network.
-2. Install it in Claude Code for all your projects:
+Use it as a **REST API**, a remote **MCP server** (Claude, Cursor and other MCP clients), or pay per call with **USDC on Base** (x402, no signup).
+
+---
+
+## Quick Start (2 minutes, free)
+
+**1. Get a free trial key** (100 pre-flight checks + 10 scrapes, no card) at **https://axveritas.onrender.com**, or:
+
+```bash
+curl -X POST https://axveritas.onrender.com/v1/trial-key \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@company.com"}'
+```
+
+**2. Check a URL before your agent fetches it:**
+
+```python
+import httpx
+
+API = "https://axveritas.onrender.com"
+KEY = {"X-API-Key": "YOUR_KEY"}
+
+check = httpx.post(f"{API}/v1/preflight", headers=KEY, json={"target_url": "https://example.com"}).json()
+
+if check["verdict"] == "PASSABLE":
+    page = httpx.post(
+        f"{API}/v1/scrape",
+        headers=KEY,
+        json={"target_url": "https://example.com", "required_keys": ["title", "text"]},
+    ).json()
+    text_for_llm = page["verified_data"]["text"]   # clean text, not markup
+else:
+    print("Skip:", check["reason"])                 # e.g. "Anti-bot / WAF or rate-limit wall detected (HTTP 403)"
+```
+
+**3. See your savings** (free, no credits used):
+
+```bash
+curl -H "X-API-Key: YOUR_KEY" https://axveritas.onrender.com/v1/usage
+```
+
+### Using an MCP client instead
+
+Claude Code, for all your projects:
 
 ```bash
 claude mcp add --transport http --scope user axveritas "https://axveritas.onrender.com/mcp?api_key=YOUR_KEY"
 ```
 
-3. Ask Claude: *"Use axveritas to pre-flight check https://example.com"*
-
-## Model Context Protocol (MCP) & Live Endpoints
-
-Axveritas is a remote **MCP Streamable HTTP / JSON-RPC 2.0** server (protocol versions `2025-06-18`, `2025-03-26` and `2024-11-05`). It supports `initialize`, `ping`, `tools/list` and **`tools/call`**, so MCP clients can run both tools directly. Authenticate with `?api_key=` in the server URL, an `X-API-Key` header, or an `X-Payment-Signature` Base USDC transaction hash.
-
-- **Remote MCP Server (Streamable HTTP):** `https://axveritas.onrender.com/mcp` (also aliased at `/`)
-- **A2A Agent Card:** `https://axveritas.onrender.com/.well-known/agent.json`
-- **LLM Specification:** `https://axveritas.onrender.com/llms.txt`
-- **Live Network Status:** `https://axveritas.onrender.com/v1/treasury`
-
-### MCP Tools
-
-- **`axveritas_preflight_check`**: Pre-flight dead-end URL check. Returns `PASSABLE` or `DEAD_END` with a reason (Cloudflare/WAF, 4xx/5xx, rate limit, empty JS shell), using a shared 6-hour domain cache. 1 preflight credit or $0.001 USDC.
-- **`axveritas_scrape_verified`**: Schema-verified web extraction. Returns clean JSON plus an `ABVS-1.0` SHA-256 receipt, or an error if any `required_keys` are missing or empty. 1 scrape credit or $0.015 USDC.
-
-### REST API
-
-- `POST /v1/preflight` and `POST /v1/scrape`: the same two operations over plain HTTP.
-- `POST /v1/relay`: two-bot schema verification relay between buyer and worker agents (1% protocol toll, $0.001 minimum). REST only.
-- `POST /v1/trial-key`: mints a free trial key (one per network).
-
-### MCP Client Configuration (`claude_desktop_config.json` / Cursor)
+Claude Desktop / Cursor (`claude_desktop_config.json` or similar):
 
 ```json
 {
@@ -48,61 +70,135 @@ Axveritas is a remote **MCP Streamable HTTP / JSON-RPC 2.0** server (protocol ve
 }
 ```
 
+MCP tools: `axveritas_preflight_check`, `axveritas_scrape_verified`, and `axveritas_usage` (free).
+
 ---
 
-## Credit Card Subscriptions (`X-API-Key` for Claude, Cursor, Grok & n8n)
+## API Reference
 
-Prefer paying by credit card instead of Base Mainnet USDC? Subscribe to a monthly plan to receive an active `X-API-Key` that works across `/v1/preflight`, `/v1/scrape`, and `/v1/relay`:
+Base URL: `https://axveritas.onrender.com` · Interactive docs: [`/docs`](https://axveritas.onrender.com/docs)
 
-| Plan | Monthly Price | Included Monthly Quota | Subscribe |
-| :--- | :--- | :--- | :--- |
-| **Starter** | **$19 / month** | 10,000 Pre-Flight Checks + 500 Verified Scrapes | **[Get Starter Key →](https://buy.stripe.com/9B6cMX8m2bsHaxa8Lc4sE00)** |
-| **Builder Pro** | **$49 / month** | 40,000 Pre-Flight Checks + 2,500 Verified Scrapes | **[Get Builder Pro Key →](https://buy.stripe.com/00weV59q6eET0WA4uW4sE01)** |
-| **Scale** | **$149 / month** | 150,000 Pre-Flight Checks + 10,000 Verified Scrapes | **[Get Scale Key →](https://buy.stripe.com/8x2bITfOufIX34I6D44sE02)** |
+Authenticate with **one** of:
+- `X-API-Key: <key>` header (or `?api_key=` on the MCP URL)
+- `X-Payment-Signature: <0x Base tx hash>` for pay-per-call USDC (see below)
 
-### Quickstart with `X-API-Key` (Python)
+### `POST /v1/preflight`: is this URL a dead end? (1 credit or $0.001)
 
-```python
-import httpx
-
-# 1. Pre-flight check ("Dead-End Sign" — prevents wasted LLM tokens)
-check = httpx.post(
-    "https://axveritas.onrender.com/v1/preflight",
-    headers={"X-API-Key": "axv_live_your_key_here"},
-    json={"target_url": "https://example.com"}
-).json()
-
-# 2. Direct schema-verified extraction (returns 422 instead of junk HTML if fields are missing)
-if check["verdict"] == "PASSABLE":
-    data = httpx.post(
-        "https://axveritas.onrender.com/v1/scrape",
-        headers={"X-API-Key": "axv_live_your_key_here"},
-        json={"target_url": "https://example.com", "required_keys": ["title", "text"]}
-    ).json()
+Request:
+```json
+{ "target_url": "https://example.com", "force_live_probe": false }
 ```
 
+Response:
+```json
+{
+  "verdict": "DEAD_END",
+  "http_status": 403,
+  "reason": "Anti-bot / WAF or rate-limit wall detected (HTTP 403)",
+  "telemetry_source": "WAZE_SHARED_TELEMETRY",
+  "credits_remaining": 99,
+  "receipt_hash": "b2413f…"
+}
+```
+
+- `verdict`: `PASSABLE` or `DEAD_END`.
+- `telemetry_source`: `WAZE_SHARED_TELEMETRY` (answered from the shared 6-hour cache) or `LIVE_PROBE`.
+- **Detects:** 401/403/429/503 and WAF challenge pages, other 4xx/5xx, timeouts (8 s), and near-empty responses.
+- Blocking is usually per site: in our test, when a homepage passed, its inner pages passed 97% of the time.
+
+### `POST /v1/scrape`: clean, verified page content (1 credit or $0.015)
+
+Request:
+```json
+{ "target_url": "https://example.com", "required_keys": ["title", "text"] }
+```
+
+Response (trimmed):
+```json
+{
+  "status": "SETTLED_HONORABLE",
+  "savings": { "raw_page_chars": 148210, "returned_chars": 6034, "reduction_pct": 95.9, "est_tokens_saved": 35544 },
+  "verified_data": {
+    "url": "https://example.com",
+    "title": "…",
+    "description": "…",
+    "headings": ["…"],
+    "links": ["…"],
+    "text": "… up to 15,000 characters of readable text …"
+  },
+  "receipt_hash": "…"
+}
+```
+
+`required_keys` can include `url`, `title`, `description`, `headings`, `links` and `text`. If any are missing or empty, you get **HTTP 422** instead of junk.
+
+### `GET /v1/usage`: your savings report (free)
+
+Returns credits left, checks made, dead ends avoided, scrape reduction and estimated tokens saved for your key.
+
+### `POST /v1/trial-key`: free trial key
+
+Body `{"email": "you@company.com"}`. One key per email and per network.
+
+### `POST /v1/relay`: two-bot verification relay (1% toll, $0.001 min, REST only)
+
+A neutral referee between a buyer agent and a worker endpoint: checks the worker's JSON has the required keys before settlement.
+
+### Errors
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `401` | Missing or invalid key | Check `X-API-Key` / `?api_key=` |
+| `402` | Out of credits, or payment required | The message includes upgrade links; or pay per call with USDC |
+| `403` | Target is a private or local address (SSRF protection) | Use a public URL |
+| `409` | USDC transaction hash already used | Send a new payment |
+| `413` | Target page over 5 MB | — |
+| `422` | Target blocked/unavailable for scraping, or `required_keys` missing | Treat the page as unusable |
+| `429` | Trial key already issued, or daily trial capacity reached | Subscribe, or try tomorrow |
+| `502` | Target could not be reached | Retry later or skip |
+
 ---
 
-## Autonomous Crypto Rail (`x402` Base Mainnet USDC)
+## Pricing
 
-Autonomous agents with funded Base Mainnet wallets (`Chain ID: 8453`) can pay per call with canonical USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) to `0x5922a9b0981db65827AC80F477b5dA3aE133c899` and pass the transaction hash in the `X-Payment-Signature` header.
+| Plan | Price | Pre-flight checks | Verified scrapes | |
+|---|---|---|---|---|
+| **Free trial** | $0 | 100 | 10 | [Get key →](https://axveritas.onrender.com) |
+| **Starter** | $19 / mo | 10,000 | 500 | [Subscribe →](https://buy.stripe.com/9B6cMX8m2bsHaxa8Lc4sE00) |
+| **Builder Pro** | $49 / mo | 40,000 | 2,500 | [Subscribe →](https://buy.stripe.com/00weV59q6eET0WA4uW4sE01) |
+| **Scale** | $149 / mo | 150,000 | 10,000 | [Subscribe →](https://buy.stripe.com/8x2bITfOufIX34I6D44sE02) |
+| **Growth** | $1,000 / mo | 1,000,000 | 50,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
+| **Business** | $5,000 / mo | 6,000,000 | 300,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
+| **Enterprise** | $15,000 / mo | 20,000,000 | 1,000,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
+| **Pay per call** | $0.001 / $0.015 | — | — | USDC on Base (below) |
+
+All subscriptions come with a **30-day money-back guarantee**. See [`/legal/terms`](https://axveritas.onrender.com/legal/terms).
+
+### Pay per call with USDC on Base (x402, no signup)
+
+Send USDC on Base mainnet (chain ID 8453, token `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) to `0x5922a9b0981db65827AC80F477b5dA3aE133c899`, then pass the transaction hash as `X-Payment-Signature`. Calls without payment return an `x402` **402** response describing exactly what to pay.
 
 ---
 
-## Self-Hosting & Local Installation
+## Discovery
 
-This repository contains the complete FastAPI + MCP JSON-RPC server implementation (`main.py`).
+- MCP server (Streamable HTTP): `https://axveritas.onrender.com/mcp` (also at `/`)
+- A2A agent card: [`/.well-known/agent.json`](https://axveritas.onrender.com/.well-known/agent.json)
+- LLM-readable summary: [`/llms.txt`](https://axveritas.onrender.com/llms.txt)
+- ABVS-1.0 spec: [`/abvs/v1/spec`](https://axveritas.onrender.com/abvs/v1/spec)
+- Network status: [`/v1/treasury`](https://axveritas.onrender.com/v1/treasury)
 
-### 1. Clone and Install Dependencies
+---
+
+## Self-Hosting
+
+This repository contains the complete FastAPI + MCP server (`main.py`).
 
 ```bash
 git clone https://github.com/axveritasprotocol/axveritas.git
 cd axveritas
 pip install -r requirements.txt
-```
-
-### 2. Run the Server
-
-```bash
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+Environment variables: `BASE_RPC_URL`, `STRIPE_WEBHOOK_SECRET` (required for the Stripe webhook), `ADMIN_PASSWORD`, `TRIAL_DAILY_CAP` (default 250) and `TRUSTED_PROXY_HOPS` (default 1).
