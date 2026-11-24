@@ -190,15 +190,17 @@ Send USDC on Base mainnet (chain ID 8453, token `0x833589fCD6eDb6E08f4c7C32D4f71
 
 ---
 
-## Self-Hosting
+## What's in this repository
 
-This repository contains the complete FastAPI + MCP server (`main.py`).
+Axveritas is a hosted service. This repository contains:
 
-```bash
-git clone https://github.com/axveritasprotocol/axveritas.git
-cd axveritas
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
+- **`mcp_stdio.py`**: a tiny, dependency-free **stdio MCP connector** for clients that only speak stdio. It forwards to the hosted server:
 
-Environment variables: `BASE_RPC_URL`, `STRIPE_WEBHOOK_SECRET` (required for the Stripe webhook), `ADMIN_PASSWORD`, `TRIAL_DAILY_CAP` (default 250) and `TRUSTED_PROXY_HOPS` (default 1).
+  ```bash
+  AXVERITAS_API_KEY=YOUR_KEY python mcp_stdio.py
+  ```
+
+  `Dockerfile` runs the same connector (used for the Glama listing).
+- **API documentation** (this README) and the **[benchmark](BENCHMARK_RESULTS.md)** with its [code](benchmark/).
+
+The hosted server itself is maintained privately. Questions or partnership inquiries: use the contact form at https://axveritas.onrender.com.
