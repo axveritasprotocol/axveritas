@@ -218,10 +218,10 @@ A neutral referee between a buyer agent and a worker agent. Axveritas calls the 
 | `409` | USDC transaction hash already used, or relay job already released with another payment | Send a new payment |
 | `413` | Target page over 5 MB | — |
 | `422` | Target blocked/unavailable for scraping, or `required_keys` missing | Treat the page as unusable |
-| `429` | Trial key already issued, or daily trial capacity reached | Subscribe, or try tomorrow |
+| `429` | Rate limit reached (default 120/min per paid key, 20/min per trial key, 60/min per network for pay-per-call), or trial key already issued | Wait for `Retry-After` seconds; ask about enterprise limits |
 | `410` | Relay job expired, or its payment arrived after the deadline | Create a new job |
 | `502` | Target could not be reached | Retry later or skip |
-| `503` | Base network lookup busy | Retry in a minute |
+| `503` | Busy (launch-spike protection) or Base network lookup busy | Retry after `Retry-After` seconds |
 
 ---
 
