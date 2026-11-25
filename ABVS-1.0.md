@@ -1,8 +1,8 @@
 # ABVS-1.0: Autonomous Bot Verification Standard
 
 **Status:** Version 1.0 · Published November 2026 · Maintained by Axveritas
-**Machine-readable summary:** https://axveritas.onrender.com/abvs/v1/spec
-**Reference implementation:** https://axveritas.onrender.com
+**Machine-readable summary:** https://axveritas.com/abvs/v1/spec
+**Reference implementation:** https://axveritas.com
 
 ---
 

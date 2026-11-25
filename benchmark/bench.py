@@ -13,7 +13,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 SEED = 20261123
-UA = "Mozilla/5.0 (compatible; AxveritasPreflight/3.5; +https://axveritas.onrender.com)"
+UA = "Mozilla/5.0 (compatible; AxveritasPreflight/3.5; +https://axveritas.com)"
 TIMEOUT = 8.0
 CONCURRENCY = 12
 TIERS = [("top_1k", 1, 1000, 350), ("1k_10k", 1001, 10000, 350), ("10k_100k", 10001, 100000, 300)]

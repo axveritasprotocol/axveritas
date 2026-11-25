@@ -16,10 +16,10 @@ Use it as a **REST API**, a remote **MCP server** (Claude, Cursor and other MCP 
 
 ## Quick Start (2 minutes, free)
 
-**1. Get a free trial key** (100 pre-flight checks + 10 scrapes, no card) at **https://axveritas.onrender.com**, or:
+**1. Get a free trial key** (100 pre-flight checks + 10 scrapes, no card) at **https://axveritas.com**, or:
 
 ```bash
-curl -X POST https://axveritas.onrender.com/v1/trial-key \
+curl -X POST https://axveritas.com/v1/trial-key \
   -H "Content-Type: application/json" \
   -d '{"email": "you@company.com"}'
 ```
@@ -29,7 +29,7 @@ curl -X POST https://axveritas.onrender.com/v1/trial-key \
 ```python
 import httpx
 
-API = "https://axveritas.onrender.com"
+API = "https://axveritas.com"
 KEY = {"X-API-Key": "YOUR_KEY"}
 
 check = httpx.post(f"{API}/v1/preflight", headers=KEY, json={"target_url": "https://example.com"}).json()
@@ -48,7 +48,7 @@ else:
 **3. See your savings** (free, no credits used):
 
 ```bash
-curl -H "X-API-Key: YOUR_KEY" https://axveritas.onrender.com/v1/usage
+curl -H "X-API-Key: YOUR_KEY" https://axveritas.com/v1/usage
 ```
 
 ### Using an MCP client instead
@@ -56,7 +56,7 @@ curl -H "X-API-Key: YOUR_KEY" https://axveritas.onrender.com/v1/usage
 Claude Code, for all your projects:
 
 ```bash
-claude mcp add --transport http --scope user axveritas "https://axveritas.onrender.com/mcp?api_key=YOUR_KEY"
+claude mcp add --transport http --scope user axveritas "https://axveritas.com/mcp?api_key=YOUR_KEY"
 ```
 
 Claude Desktop / Cursor (`claude_desktop_config.json` or similar):
@@ -65,7 +65,7 @@ Claude Desktop / Cursor (`claude_desktop_config.json` or similar):
 {
   "mcpServers": {
     "axveritas": {
-      "url": "https://axveritas.onrender.com/mcp?api_key=YOUR_KEY"
+      "url": "https://axveritas.com/mcp?api_key=YOUR_KEY"
     }
   }
 }
@@ -88,7 +88,7 @@ For settlement, your agent also needs a wallet tool that can send USDC on Base.
 
 ## API Reference
 
-Base URL: `https://axveritas.onrender.com` · Interactive docs: [`/docs`](https://axveritas.onrender.com/docs)
+Base URL: `https://axveritas.com` · Interactive docs: [`/docs`](https://axveritas.com/docs)
 
 Authenticate with **one** of:
 - `X-API-Key: <key>` header (or `?api_key=` on the MCP URL)
@@ -229,16 +229,16 @@ A neutral referee between a buyer agent and a worker agent. Axveritas calls the 
 
 | Plan | Price | Pre-flight checks | Verified scrapes | |
 |---|---|---|---|---|
-| **Free trial** | $0 | 100 | 10 | [Get key →](https://axveritas.onrender.com) |
+| **Free trial** | $0 | 100 | 10 | [Get key →](https://axveritas.com) |
 | **Starter** | $19 / mo | 10,000 | 500 | [Subscribe →](https://buy.stripe.com/9B6cMX8m2bsHaxa8Lc4sE00) |
 | **Builder Pro** | $49 / mo | 40,000 | 2,500 | [Subscribe →](https://buy.stripe.com/00weV59q6eET0WA4uW4sE01) |
 | **Scale** | $149 / mo | 150,000 | 10,000 | [Subscribe →](https://buy.stripe.com/8x2bITfOufIX34I6D44sE02) |
-| **Growth** | $1,000 / mo | 1,000,000 | 50,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
-| **Business** | $5,000 / mo | 6,000,000 | 300,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
-| **Enterprise** | $15,000 / mo | 20,000,000 | 1,000,000 | [Contact →](https://axveritas.onrender.com/#enterprise) |
+| **Growth** | $1,000 / mo | 1,000,000 | 50,000 | [Contact →](https://axveritas.com/#enterprise) |
+| **Business** | $5,000 / mo | 6,000,000 | 300,000 | [Contact →](https://axveritas.com/#enterprise) |
+| **Enterprise** | $15,000 / mo | 20,000,000 | 1,000,000 | [Contact →](https://axveritas.com/#enterprise) |
 | **Pay per call** | $0.005 / check, $0.02 / scrape | — | — | USDC on Base (below) |
 
-All subscriptions come with a **30-day money-back guarantee**. See [`/legal/terms`](https://axveritas.onrender.com/legal/terms).
+All subscriptions come with a **30-day money-back guarantee**. See [`/legal/terms`](https://axveritas.com/legal/terms).
 
 ### Pay with USDC on Base (x402, no signup)
 
@@ -266,11 +266,11 @@ GET  /v1/topup                  # list bundles
 
 ## Discovery
 
-- MCP server (Streamable HTTP): `https://axveritas.onrender.com/mcp` (also at `/`)
-- A2A agent card: [`/.well-known/agent.json`](https://axveritas.onrender.com/.well-known/agent.json)
-- LLM-readable summary: [`/llms.txt`](https://axveritas.onrender.com/llms.txt)
-- ABVS-1.0 standard: [ABVS-1.0.md](ABVS-1.0.md) (JSON summary: [`/abvs/v1/spec`](https://axveritas.onrender.com/abvs/v1/spec))
-- Network status: [`/v1/treasury`](https://axveritas.onrender.com/v1/treasury)
+- MCP server (Streamable HTTP): `https://axveritas.com/mcp` (also at `/`)
+- A2A agent card: [`/.well-known/agent.json`](https://axveritas.com/.well-known/agent.json)
+- LLM-readable summary: [`/llms.txt`](https://axveritas.com/llms.txt)
+- ABVS-1.0 standard: [ABVS-1.0.md](ABVS-1.0.md) (JSON summary: [`/abvs/v1/spec`](https://axveritas.com/abvs/v1/spec))
+- Network status: [`/v1/treasury`](https://axveritas.com/v1/treasury)
 
 ---
 
@@ -287,4 +287,4 @@ Axveritas is a hosted service. This repository contains:
   `Dockerfile` runs the same connector (used for the Glama listing).
 - **API documentation** (this README) and the **[benchmark](BENCHMARK_RESULTS.md)** with its [code](benchmark/).
 
-The hosted server itself is maintained privately. Questions or partnership inquiries: use the contact form at https://axveritas.onrender.com.
+The hosted server itself is maintained privately. Questions or partnership inquiries: use the contact form at https://axveritas.com.

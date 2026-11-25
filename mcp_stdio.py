@@ -1,9 +1,9 @@
 """Axveritas MCP stdio connector.
 
 Bridges a local stdio MCP client to the hosted Axveritas server
-(https://axveritas.onrender.com/mcp). Standard library only.
+(https://axveritas.com/mcp). Standard library only.
 
-Set AXVERITAS_API_KEY to your key (free trial at https://axveritas.onrender.com)
+Set AXVERITAS_API_KEY to your key (free trial at https://axveritas.com)
 so tool calls are authorized; listing tools works without a key.
 """
 import json
@@ -12,7 +12,7 @@ import sys
 import urllib.parse
 import urllib.request
 
-REMOTE_URL = os.environ.get("AXVERITAS_URL", "https://axveritas.onrender.com/mcp")
+REMOTE_URL = os.environ.get("AXVERITAS_URL", "https://axveritas.com/mcp")
 API_KEY = os.environ.get("AXVERITAS_API_KEY", "").strip()
 if API_KEY:
     REMOTE_URL += ("&" if "?" in REMOTE_URL else "?") + urllib.parse.urlencode({"api_key": API_KEY})
