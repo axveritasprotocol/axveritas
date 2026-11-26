@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.axveritasprotocol/axveritas",
+  "title": "Axveritas",
+  "description": "Pre-flight URL checks and clean page text for AI agents: skip dead pages before your LLM reads them.",
+  "version": "3.22.1",
+  "websiteUrl": "https://axveritas.com",
+  "repository": {
+    "url": "https://github.com/axveritasprotocol/axveritas",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://axveritas.com/logo.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://axveritas.com/mcp",
+      "headers": [
+        {
+          "name": "X-API-Key",
+          "description": "Your Axveritas key (free trial at https://axveritas.com). Optional: without a key, calls can be paid per call in USDC on Base (x402).",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
